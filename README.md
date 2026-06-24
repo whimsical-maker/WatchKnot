@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WatchKnot
 
-## Getting Started
+WatchKnot is a comprehensive, full-stack social platform and virtual movie theater. It allows users to collect, review, share, and watch movies together in real-time. Built with a cozy, vintage-aesthetic design language, WatchKnot merges the features of a private movie tracking journal with synchronized group streaming and social media mechanics.
 
-First, run the development server:
+Live Deployment: https://watchknot.vercel.app
+
+## Core Features
+
+### 1. Social Feed and Movie Journal
+A fully persisted, algorithmic social feed where users can write journal entries about movies.
+*   **Media Integration**: Users can attach images and short video clips to their posts.
+*   **Algorithmic Feed**: Features a pull-to-refresh mechanism with content ranked based on engagement (reactions and comments) and recency.
+*   **Custom Reactions**: A bespoke reaction system allowing users to respond with specialized sentiments (Wow, Care, Like, etc.) rather than standard emojis.
+*   **Privacy Controls**: Post visibility can be finely tuned to "Only Me", "Specific Friends", or "All Friends".
+*   **Moderation**: Users maintain full control over their content, including the ability to delete posts, hide comments, and block malicious accounts.
+
+### 2. Synchronized Watch Parties
+An integrated "Watch Room" experience designed for remote streaming with friends.
+*   **Real-time Synchronization**: Coordinated video playback ensuring that play, pause, and seek actions are perfectly synced across all connected clients via WebRTC.
+*   **Communication Layer**: Integrated chatbox overlay supporting text, GIFs, and real-time custom reactions.
+*   **Lobby System**: Active watch rooms are broadcasted to the home page lobby, allowing authorized friends to seamlessly join ongoing sessions.
+
+### 3. Progressive Web App and Offline Downloads
+WatchKnot is designed as a standalone, installable Progressive Web App (PWA).
+*   **Device Caching**: Utilizes a custom Service Worker and the browser Cache API to securely download large video blobs directly to the user's device.
+*   **TV Show Support**: The database architecture natively supports Seasons and Episodes, allowing users to download individual episodes or binge entire seasons offline.
+*   **Offline Hub**: A dedicated downloads management page where users can access, view, and delete their cached media without an active internet connection.
+
+### 4. Interactive Digital Ticketing
+Before accessing a Watch Room, users must acquire a virtual ticket.
+*   **CSS Architecture**: Tickets are rendered dynamically using pure HTML and CSS, featuring a vintage film-strip aesthetic, accurate typography, and generated barcodes.
+*   **Seat Allocation**: Users select specific rows and seats, which are locked transactionally to prevent double-booking.
+*   **AI Personalization**: Integrated AI generates personalized, context-aware messages on the ticket based on the specific movie's genre and mood.
+
+### 5. Administrative Control Panel
+A robust admin dashboard ensuring platform safety and content standards.
+*   **User Management**: Administrators can view user statistics, track movie uploads, and instantly revoke access by banning accounts.
+*   **Content Moderation**: Global privileges to edit or permanently delete any movie or post on the platform.
+*   **Banned User Handling**: Banned users are securely intercepted at the layout layer and trapped on a dedicated restriction screen, severing all access to the API and feed.
+
+## Technology Stack
+
+*   **Frontend Framework**: Next.js 15 (App Router, Server Components)
+*   **Styling**: Pure CSS and CSS Modules (No TailwindCSS, enforcing custom design systems)
+*   **Database**: Neon (Serverless PostgreSQL)
+*   **ORM**: Prisma
+*   **Authentication**: Firebase Authentication and Firebase Admin SDK
+*   **Real-time Communication**: PeerJS (WebRTC) for synchronized video playback
+*   **Media Storage**: Firebase Storage for user-uploaded media
+*   **AI Integration**: Groq SDK for natural language processing and ticket personalization
+*   **Icons**: Lucide React
+
+## Project Architecture
+
+The application follows a modern serverless architecture utilizing Next.js Server Components for optimal data fetching and SEO, while offloading interactive elements to Client Components.
+
+1.  **Data Layer**: Prisma acts as the bridge to a Neon Postgres database. The schema is highly relational, connecting Users to Movies, Tickets, Posts, Friendships, and nested media structures (Seasons and Episodes).
+2.  **Authentication Layer**: Authentication is handled purely through Firebase. The frontend maintains the session via the Firebase Client SDK, while the backend API routes securely verify identity using the Firebase Admin SDK by extracting and decoding the Bearer token from the request headers.
+3.  **Media and PWA Layer**: Video playback relies on HTML5 video elements. For offline capabilities, a custom Service Worker intercepts `fetch` requests. When a user downloads a movie, the file is streamed into the browser's Cache API, while metadata is stored in LocalStorage.
+4.  **Real-time Layer**: WebRTC data channels are utilized for the Watch Room. By leveraging PeerJS, clients establish direct peer-to-peer connections, minimizing server latency during synchronized playback commands.
+
+## Local Development Setup
+
+1.  Clone the repository.
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+3.  Configure your environment variables. Create a `.env` file in the root directory and provide your keys:
+    *   `DATABASE_URL` (Neon Postgres Connection String)
+    *   Firebase Client Configuration
+    *   Firebase Admin Service Account credentials
+    *   `GROQ_API_KEY`
+4.  Initialize the database schema:
+    ```bash
+    npx prisma db push
+    npx prisma generate
+    ```
+5.  Start the development server:
+    ```bash
+    npm run dev
+    ```
+6.  Open `http://localhost:3000` in your browser.
+
+## Production Build
+
+To build the application for production deployment:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+WatchKnot is optimized for serverless deployment platforms such as Vercel. Ensure all environment variables are properly configured in your deployment platform's dashboard before triggering a build.
