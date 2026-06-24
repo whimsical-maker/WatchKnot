@@ -1,9 +1,10 @@
-import admin from "firebase-admin";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 
-if (!admin.apps.length) {
-  admin.initializeApp({
+if (getApps().length === 0) {
+  initializeApp({
     projectId: "watchknot",
   });
 }
 
-export default admin;
+export const adminAuth = getAuth();

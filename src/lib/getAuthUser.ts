@@ -1,4 +1,4 @@
-import admin from "@/lib/firebase-admin";
+import { adminAuth } from "@/lib/firebase-admin";
 import { NextRequest } from "next/server";
 
 export async function getAuthUser(req: NextRequest | Request) {
@@ -7,7 +7,7 @@ export async function getAuthUser(req: NextRequest | Request) {
     if (!authorization?.startsWith("Bearer ")) return null;
 
     const token = authorization.split("Bearer ")[1];
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = await adminAuth.verifyIdToken(token);
 
     return {
       uid: decoded.uid,
