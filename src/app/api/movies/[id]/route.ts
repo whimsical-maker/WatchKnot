@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/getAuthUser";
 import { prisma } from "@/lib/prisma";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-  const { id } = params;
+  const { id } = await params;
   const { title, year, genre, posterUrl, rating, description } = await req.json();
 
   if (!title) return NextResponse.json({ message: "Title is required" }, { status: 400 });
@@ -32,11 +32,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json({ movie: updatedMovie });
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-  const { id } = params;
+  const { id } = await params;
 
   const existing = await prisma.movie.findUnique({ where: { id } });
   if (!existing || existing.addedById !== user.uid) {

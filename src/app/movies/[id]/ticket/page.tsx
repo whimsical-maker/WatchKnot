@@ -2,21 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Download, Scissors } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-export default function TicketPage({ params }: { params: { id: string } }) {
+export default function TicketPage() {
   const { user, loading: authLoading, getToken } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
-    if (!authLoading && user) fetchOrGenerateTicket();
-  }, [user, authLoading]);
+    if (!authLoading && user && id) fetchOrGenerateTicket();
+  }, [user, authLoading, id]);
 
   const fetchOrGenerateTicket = async () => {
     try {
@@ -25,7 +27,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
       const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ movieId: params.id }),
+        body: JSON.stringify({ movieId: id }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -58,7 +60,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
   return (
     <div style={{ minHeight: "calc(100vh - 64px)", padding: "40px 20px", backgroundColor: "#f8f5f2", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: "800px", marginBottom: "20px" }}>
-        <Link href={`/movies/${params.id}`} style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#888", fontSize: "0.9rem", textDecoration: "none" }}>
+        <Link href={`/movies/${id}`} style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: "#888", fontSize: "0.9rem", textDecoration: "none" }}>
           <ArrowLeft size={16} /> Back to Movie
         </Link>
       </div>

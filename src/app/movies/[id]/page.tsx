@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Star, Calendar, Ticket } from "lucide-react";
 
-export default async function MovieDetailPage({ params }: { params: { id: string } }) {
+export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
   const movie = await prisma.movie.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { addedBy: true },
   });
 
