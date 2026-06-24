@@ -3,19 +3,10 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDistanceToNow } from "date-fns";
-import { MoreHorizontal, MessageCircle, Heart, Trash2, Ban, Film } from "lucide-react";
+import { MoreHorizontal, MessageCircle, Trash2, Ban, Film } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-
-const REACTIONS = [
-  { id: "like", emoji: "👍", label: "Like" },
-  { id: "love", emoji: "❤️", label: "Love" },
-  { id: "care", emoji: "🥰", label: "Care" },
-  { id: "haha", emoji: "😂", label: "Haha" },
-  { id: "wow", emoji: "😮", label: "Wow" },
-  { id: "sad", emoji: "😢", label: "Sad" },
-  { id: "angry", emoji: "😡", label: "Angry" }
-];
+import { ReactionPicker, ReactionStamp, REACTIONS, ReactionKey } from "./ReactionStamps";
 
 export default function PostCard({ post, onUpdate, onDelete, onBlock }: { post: any, onUpdate: () => void, onDelete: (id: string) => void, onBlock: (id: string) => void }) {
   const { user } = useAuth();
@@ -23,14 +14,11 @@ export default function PostCard({ post, onUpdate, onDelete, onBlock }: { post: 
   const [newComment, setNewComment] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
-  const [showReactorsModal, setShowReactorsModal] = useState(false);
 
-  const isOwner = user?.email && post.user.id === user.uid; // wait, uid vs db id? We use email from auth.
-  // Actually, we need the DB user ID. Let's assume we can check ownership via email since we don't have db userId in AuthContext natively without fetching. We can pass dbUser in or just check if post.user.email? Wait, post.user only has id, name, image.
-  // Let's assume we check ownership via `post.user.name === user.displayName` for now or just allow it if the backend allows it (backend will block invalid deletes).
-  // Better: We can check if `post.userId === currentDbUserId`. Let's pass currentDbUserId if available, or just send delete request and let backend handle it.
+  const isOwner = user?.email && post.user.id === user.uid; 
   
-  const handleReaction = async (type: string) => {
+  const handleReaction = async (type: ReactionKey | null) => {
+    if (!type) return;
     setShowReactions(false);
     try {
       const token = await user?.getIdToken();
@@ -82,155 +70,218 @@ export default function PostCard({ post, onUpdate, onDelete, onBlock }: { post: 
     }
   };
 
-  return (
-    <div className="cute-card" style={{ marginBottom: "20px", backgroundColor: "var(--color-bg)", padding: "20px", position: "relative" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "15px" }}>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <img src={post.user.image || "/default-avatar.png"} alt={post.user.name} style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }} />
-          <div>
-            <h4 style={{ margin: 0, fontWeight: "bold" }}>{post.user.name}</h4>
-            <span style={{ fontSize: "0.8rem", color: "#888" }}>{formatDistanceToNow(new Date(post.createdAt))} ago • {post.privacy}</span>
-          </div>
-        </div>
+  // Group reactions for display
+  const reactionCounts: Record<string, number> = {};
+  post.reactions.forEach((r: any) => {
+    reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1;
+  });
 
-        <div style={{ position: "relative" }}>
-          <button onClick={() => setShowMenu(!showMenu)} style={{ background: "none", border: "none", cursor: "pointer", color: "#888" }}>
+  return (
+    <motion.div 
+      layout
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="bg-card border border-border rounded-2xl p-4 shadow-sm relative mb-5"
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start mb-4">
+        <Link href={`/users/${post.user.id}`} className="flex gap-3 group">
+          <img 
+            src={post.user.image || "/default-avatar.png"} 
+            alt={post.user.name} 
+            className="w-10 h-10 rounded-full object-cover border-2 border-transparent group-hover:border-primary transition" 
+          />
+          <div>
+            <h4 className="m-0 font-bold text-foreground group-hover:text-primary transition">{post.user.name}</h4>
+            <div className="flex items-center text-xs text-muted-foreground font-handwritten">
+              <span>{formatDistanceToNow(new Date(post.createdAt))} ago</span>
+              <span className="mx-1.5 opacity-50">•</span>
+              <span className="capitalize">{post.privacy.toLowerCase()}</span>
+            </div>
+          </div>
+        </Link>
+
+        <div className="relative">
+          <button 
+            onClick={() => setShowMenu(!showMenu)} 
+            className="p-1 rounded-full hover:bg-secondary text-muted-foreground transition"
+          >
             <MoreHorizontal size={20} />
           </button>
-          {showMenu && (
-            <div style={{ position: "absolute", top: "100%", right: 0, backgroundColor: "white", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", borderRadius: "8px", overflow: "hidden", zIndex: 10, minWidth: "150px" }}>
-              <button onClick={() => { setShowMenu(false); onDelete(post.id); }} style={{ width: "100%", padding: "10px", display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", borderBottom: "1px solid #eee", cursor: "pointer", color: "var(--color-maroon)" }}>
-                <Trash2 size={16} /> Delete Post
-              </button>
-              <button onClick={() => { setShowMenu(false); onBlock(post.user.id); }} style={{ width: "100%", padding: "10px", display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", cursor: "pointer" }}>
-                <Ban size={16} /> Block User
-              </button>
-            </div>
-          )}
+          <AnimatePresence>
+            {showMenu && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                className="absolute top-full right-0 mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-20 min-w-[150px]"
+              >
+                <button 
+                  onClick={() => { setShowMenu(false); onDelete(post.id); }} 
+                  className="w-full text-left px-4 py-2.5 text-sm text-destructive hover:bg-secondary flex items-center gap-2 transition"
+                >
+                  <Trash2 size={16} /> Delete Post
+                </button>
+                <button 
+                  onClick={() => { setShowMenu(false); onBlock(post.user.id); }} 
+                  className="w-full text-left px-4 py-2.5 text-sm text-foreground hover:bg-secondary flex items-center gap-2 transition"
+                >
+                  <Ban size={16} /> Block User
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* Content */}
-      <p style={{ fontSize: "1.1rem", marginBottom: "15px", whiteSpace: "pre-wrap" }}>{post.content}</p>
+      <p className="text-base sm:text-lg mb-4 whitespace-pre-wrap font-handwritten leading-relaxed text-foreground">
+        {post.content}
+      </p>
 
       {/* Media */}
       {post.mediaUrl && (
-        <div style={{ borderRadius: "12px", overflow: "hidden", marginBottom: "15px", border: "1px solid var(--color-border)" }}>
+        <div className="rounded-xl overflow-hidden mb-4 border border-border max-h-[500px] flex items-center justify-center bg-black/5">
           {post.mediaType === "video" ? (
-            <video src={post.mediaUrl} controls style={{ width: "100%", maxHeight: "400px", display: "block" }} />
+            <video src={post.mediaUrl} controls className="max-w-full max-h-[500px]" />
           ) : (
-            <img src={post.mediaUrl} alt="Post media" style={{ width: "100%", maxHeight: "400px", objectFit: "cover", display: "block" }} />
+            <img src={post.mediaUrl} alt="Post media" className="max-w-full max-h-[500px] object-cover" />
           )}
         </div>
       )}
 
-      {/* Linked Movie */}
+      {/* Linked Movie (Washi Tape Style) */}
       {post.movie && (
-        <Link href={`/movies/${post.movie.id}`} style={{ textDecoration: "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", backgroundColor: "var(--color-gingham)", borderRadius: "8px", marginBottom: "15px", border: "1px dashed var(--color-border)" }}>
+        <Link href={`/movies/${post.movie.id}`} className="block mb-4 transform -rotate-1 hover:rotate-0 transition">
+          <div className="relative bg-secondary/50 rounded-lg p-3 flex items-center gap-3 border border-border border-dashed">
+            {/* Washi tape detail */}
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-primary/20 backdrop-blur-sm transform rotate-2"></div>
+            
             {post.movie.posterUrl ? (
-              <img src={post.movie.posterUrl} alt={post.movie.title} style={{ width: "40px", height: "60px", objectFit: "cover", borderRadius: "4px" }} />
+              <img src={post.movie.posterUrl} alt={post.movie.title} className="w-10 h-14 object-cover rounded shadow-sm" />
             ) : (
-              <Film size={40} color="#999" />
+              <div className="w-10 h-14 bg-muted rounded flex items-center justify-center"><Film size={20} className="text-muted-foreground" /></div>
             )}
             <div>
-              <h5 style={{ margin: 0, color: "var(--color-text)", fontSize: "1rem" }}>{post.movie.title}</h5>
-              <span style={{ fontSize: "0.8rem", color: "var(--color-maroon)" }}>View Movie</span>
+              <h5 className="m-0 text-foreground font-bold text-sm line-clamp-1">{post.movie.title}</h5>
+              <span className="text-xs text-primary font-handwritten">View Movie details</span>
             </div>
           </div>
         </Link>
       )}
 
-      {/* Stats */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", paddingBottom: "10px", marginBottom: "10px", fontSize: "0.9rem", color: "#666" }}>
-        <div style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }} onClick={() => setShowReactorsModal(true)}>
-          {post.reactions.length > 0 ? (
+      {/* Stats Summary */}
+      <div className="flex justify-between items-center py-2 mb-2 text-xs font-handwritten text-muted-foreground border-b border-border">
+        <div className="flex gap-1.5">
+          {Object.entries(reactionCounts).length > 0 ? (
             <>
-              {Array.from(new Set(post.reactions.map((r:any) => r.type))).slice(0, 3).map((type: any, i) => (
-                <span key={i}>{REACTIONS.find(r => r.id === type)?.emoji}</span>
+              {Object.entries(reactionCounts).map(([type, count]) => (
+                <ReactionStamp 
+                  key={type} 
+                  reaction={type as ReactionKey} 
+                  size={16} 
+                  count={count as number} 
+                />
               ))}
-              <span>{post.reactions.length}</span>
             </>
-          ) : <span>0 Reactions</span>}
+          ) : <span>No reactions yet</span>}
         </div>
-        <div style={{ cursor: "pointer" }} onClick={() => setShowComments(!showComments)}>
+        <button onClick={() => setShowComments(!showComments)} className="hover:text-foreground transition">
           {post.comments.length} Comments
-        </div>
+        </button>
       </div>
 
-      {/* Actions */}
-      <div style={{ display: "flex", position: "relative" }}>
+      {/* Action Buttons */}
+      <div className="flex relative">
         <div 
           onMouseEnter={() => setShowReactions(true)} 
           onMouseLeave={() => setShowReactions(false)}
-          style={{ flex: 1, position: "relative" }}
+          className="flex-1 relative"
         >
-          <button style={{ width: "100%", padding: "10px", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", color: "#555", fontWeight: "bold", borderRadius: "8px" }} className="hover-bg">
-            <Heart size={20} /> React
+          <button className="w-full py-2 flex justify-center items-center gap-2 text-sm font-bold text-muted-foreground hover:bg-secondary rounded-lg transition">
+            <ReactionStamp reaction="love" size={18} /> React
           </button>
           
           <AnimatePresence>
             {showReactions && (
               <motion.div 
-                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                style={{ position: "absolute", bottom: "100%", left: 0, backgroundColor: "white", padding: "8px 12px", borderRadius: "30px", boxShadow: "0 5px 15px rgba(0,0,0,0.2)", display: "flex", gap: "10px", zIndex: 20 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute bottom-[calc(100%+5px)] left-0 z-20"
               >
-                {REACTIONS.map(r => (
-                  <motion.button 
-                    key={r.id}
-                    whileHover={{ scale: 1.3, y: -5 }}
-                    onClick={() => handleReaction(r.id)}
-                    style={{ background: "none", border: "none", fontSize: "1.5rem", cursor: "pointer", padding: 0 }}
-                    title={r.label}
-                  >
-                    {r.emoji}
-                  </motion.button>
-                ))}
+                <ReactionPicker 
+                  selected={null} 
+                  onPick={(r) => handleReaction(r)} 
+                />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        <button onClick={() => setShowComments(!showComments)} style={{ flex: 1, padding: "10px", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", color: "#555", fontWeight: "bold", borderRadius: "8px" }} className="hover-bg">
-          <MessageCircle size={20} /> Comment
+        <button 
+          onClick={() => setShowComments(!showComments)} 
+          className="flex-1 py-2 flex justify-center items-center gap-2 text-sm font-bold text-muted-foreground hover:bg-secondary rounded-lg transition"
+        >
+          <MessageCircle size={18} /> Comment
         </button>
       </div>
 
       {/* Comments Section */}
       <AnimatePresence>
         {showComments && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ overflow: "hidden" }}>
-            <div style={{ paddingTop: "15px", borderTop: "1px solid #eee", marginTop: "10px" }}>
-              <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-                <img src={user?.photoURL || "/default-avatar.png"} alt="You" style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }} />
-                <div style={{ flex: 1, display: "flex", gap: "10px" }}>
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: "auto" }} 
+            exit={{ opacity: 0, height: 0 }} 
+            className="overflow-hidden"
+          >
+            <div className="pt-4 mt-2 border-t border-border space-y-4">
+              {/* Add Comment */}
+              <div className="flex gap-3">
+                <img 
+                  src={user?.photoURL || "/default-avatar.png"} 
+                  alt="You" 
+                  className="w-8 h-8 rounded-full object-cover border border-border shrink-0" 
+                />
+                <div className="flex-1 flex gap-2">
                   <input 
                     type="text" 
-                    placeholder="Write a comment..." 
+                    placeholder="Write a sweet comment..." 
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleComment()}
-                    style={{ flex: 1, padding: "8px 12px", borderRadius: "20px", border: "1px solid var(--color-border)", outline: "none", backgroundColor: "#f9f9f9" }}
+                    className="flex-1 px-4 py-2 rounded-full border border-border bg-muted/30 focus:bg-background outline-none font-handwritten text-sm transition"
                   />
-                  <button onClick={handleComment} disabled={!newComment.trim()} className="btn-primary" style={{ padding: "8px 16px" }}>Post</button>
+                  <button 
+                    onClick={handleComment} 
+                    disabled={!newComment.trim()} 
+                    className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-full disabled:opacity-50 transition"
+                  >
+                    Post
+                  </button>
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {/* Comment List */}
+              <div className="space-y-3">
                 {post.comments.map((c: any) => (
-                  <div key={c.id} style={{ display: "flex", gap: "10px" }}>
-                    <img src={c.user.image || "/default-avatar.png"} alt={c.user.name} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ backgroundColor: "#f0f2f5", padding: "8px 12px", borderRadius: "16px", display: "inline-block" }}>
-                        <span style={{ fontWeight: "bold", fontSize: "0.9rem", display: "block" }}>{c.user.name}</span>
-                        <span style={{ fontSize: "0.95rem" }}>{c.content}</span>
+                  <div key={c.id} className="flex gap-3 group">
+                    <img src={c.user.image || "/default-avatar.png"} alt={c.user.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                    <div className="flex-1">
+                      <div className="bg-secondary/50 px-3 py-2 rounded-2xl rounded-tl-sm inline-block max-w-full">
+                        <span className="font-bold text-sm block text-foreground">{c.user.name}</span>
+                        <span className="text-sm font-handwritten text-foreground break-words">{c.content}</span>
                       </div>
-                      <div style={{ fontSize: "0.8rem", color: "#888", marginLeft: "12px", marginTop: "4px", display: "flex", gap: "10px" }}>
+                      <div className="flex items-center gap-3 mt-1 ml-2 text-xs text-muted-foreground font-handwritten">
                         <span>{formatDistanceToNow(new Date(c.createdAt))} ago</span>
-                        <button onClick={() => handleDeleteComment(c.id)} style={{ background: "none", border: "none", color: "var(--color-maroon)", cursor: "pointer", fontSize: "0.8rem", padding: 0 }}>Delete</button>
+                        <button 
+                          onClick={() => handleDeleteComment(c.id)} 
+                          className="text-destructive opacity-0 group-hover:opacity-100 transition hover:underline"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -240,12 +291,6 @@ export default function PostCard({ post, onUpdate, onDelete, onBlock }: { post: 
           </motion.div>
         )}
       </AnimatePresence>
-
-      <style jsx>{`
-        .hover-bg:hover {
-          background-color: #f0f2f5 !important;
-        }
-      `}</style>
-    </div>
+    </motion.div>
   );
 }

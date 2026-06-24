@@ -2,22 +2,31 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Image as ImageIcon, Video, Film, Lock, Users, Globe, X, Loader2 } from "lucide-react";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { v4 as uuidv4 } from "uuid";
-import { motion } from "framer-motion";
+import { Image as ImageIcon, Video, Film, Lock, Users, Globe, X, Loader2, Send } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "@/hooks/use-toast";
+
+const MAX_VIDEO_SECONDS = 60;
+
+export type Audience = "PUBLIC" | "FRIENDS" | "ME";
+
+const audienceMeta: Record<Audience, { label: string; icon: typeof Globe; hint: string }> = {
+  PUBLIC: { label: "Everyone", icon: Globe, hint: "Anyone signed in can see" },
+  FRIENDS: { label: "Friends", icon: Users, hint: "Only your friends" },
+  ME: { label: "Only me", icon: Lock, hint: "Private to your journal" },
+};
 
 export default function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
   const { user } = useAuth();
+  const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [privacy, setPrivacy] = useState("FRIENDS");
+  const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null);
+  const [audience, setAudience] = useState<Audience>("FRIENDS");
   const [loading, setLoading] = useState(false);
   const [movies, setMovies] = useState<any[]>([]);
   const [selectedMovieId, setSelectedMovieId] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -28,25 +37,46 @@ export default function CreatePost({ onPostCreated }: { onPostCreated: () => voi
     }
   }, [user]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        alert("File size must be under 10MB");
+      const f = e.target.files[0];
+      if (f.size > 20 * 1024 * 1024) {
+        toast({ title: "File too large (20MB max)", variant: "destructive" });
         return;
       }
-      setMediaFile(file);
-      setMediaPreview(URL.createObjectURL(file));
+      if (f.type.startsWith("video/")) {
+        const seconds = await new Promise<number>((res) => {
+          const v = document.createElement("video");
+          v.preload = "metadata";
+          v.onloadedmetadata = () => res(v.duration);
+          v.onerror = () => res(0);
+          v.src = URL.createObjectURL(f);
+        });
+        if (seconds > MAX_VIDEO_SECONDS + 1) {
+          toast({ title: `Clips must be ${MAX_VIDEO_SECONDS}s or shorter`, variant: "destructive" });
+          return;
+        }
+      }
+      setMediaFile(f);
+      setMediaPreview({ url: URL.createObjectURL(f), type: f.type.startsWith("video/") ? "video" : "image" });
     }
   };
 
   const removeMedia = () => {
     setMediaFile(null);
     setMediaPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handlePost = async () => {
+  const reset = () => {
+    setContent("");
+    setSelectedMovieId("");
+    setMediaFile(null);
+    setMediaPreview(null);
+    setAudience("FRIENDS");
+    setOpen(false);
+  };
+
+  const submit = async () => {
     if (!content.trim() && !mediaFile) return;
     setLoading(true);
 
@@ -55,12 +85,32 @@ export default function CreatePost({ onPostCreated }: { onPostCreated: () => voi
       let mediaType = null;
 
       if (mediaFile) {
+        // 1. Get Cloudinary Signature
+        const sigRes = await fetch("/api/upload/signature");
+        const { timestamp, signature } = await sigRes.json();
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+
+        // 2. Upload to Cloudinary
+        const formData = new FormData();
+        formData.append("file", mediaFile);
+        formData.append("api_key", process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || "234993462578482"); // fallback for demo
+        formData.append("timestamp", timestamp.toString());
+        formData.append("signature", signature);
+        formData.append("folder", "watchknot-journal");
+
+        const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
+          method: "POST",
+          body: formData
+        });
+
+        const uploadData = await uploadRes.json();
+        if (uploadData.error) throw new Error(uploadData.error.message);
+        
+        mediaUrl = uploadData.secure_url;
         mediaType = mediaFile.type.startsWith("video/") ? "video" : "image";
-        const storageRef = ref(storage, `posts/${uuidv4()}_${mediaFile.name}`);
-        const uploadTask = await uploadBytesResumable(storageRef, mediaFile);
-        mediaUrl = await getDownloadURL(uploadTask.ref);
       }
 
+      // 3. Post to our backend
       const token = await user?.getIdToken();
       const res = await fetch("/api/posts", {
         method: "POST",
@@ -73,81 +123,81 @@ export default function CreatePost({ onPostCreated }: { onPostCreated: () => voi
           mediaUrl,
           mediaType,
           movieId: selectedMovieId || null,
-          privacy,
+          privacy: audience,
         })
       });
 
-      if (res.ok) {
-        setContent("");
-        removeMedia();
-        setSelectedMovieId("");
-        setPrivacy("FRIENDS");
-        onPostCreated();
-      } else {
-        alert("Failed to create post.");
-      }
-    } catch (err) {
+      if (!res.ok) throw new Error("Failed to create post.");
+
+      toast({ title: "Posted to your journal" });
+      reset();
+      onPostCreated();
+    } catch (err: any) {
       console.error(err);
-      alert("Error creating post.");
+      toast({ title: err.message || "Error creating post.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
+  const AudienceIcon = audienceMeta[audience].icon;
+
   return (
-    <div className="cute-card" style={{ padding: "20px", marginBottom: "30px", backgroundColor: "var(--color-bg)" }}>
-      <div style={{ display: "flex", gap: "15px" }}>
-        <img 
-          src={user?.photoURL || "/default-avatar.png"} 
-          alt="Avatar" 
-          style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover", border: "2px solid var(--color-maroon)" }} 
-        />
-        <div style={{ flex: 1 }}>
-          <textarea 
-            placeholder="Write a movie journal entry..." 
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            style={{ 
-              width: "100%", 
-              minHeight: "80px", 
-              border: "none", 
-              outline: "none", 
-              resize: "none", 
-              backgroundColor: "transparent", 
-              fontSize: "1.1rem", 
-              fontFamily: "inherit" 
-            }}
-          />
+    <div className="bg-card rounded-2xl border border-border p-3 sm:p-4 shadow-sm mb-6 transition-all duration-300">
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full text-left text-sm text-muted-foreground px-4 py-3 rounded-xl bg-muted/40 hover:bg-muted transition font-handwritten"
+        >
+          Share a movie thought, clip or photo...
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <img 
+              src={user?.photoURL || "/default-avatar.png"} 
+              alt="Avatar" 
+              className="w-10 h-10 rounded-full object-cover border-2 border-border"
+            />
+            <textarea
+              autoFocus
+              rows={3}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="What did you just watch? Drop a clip, a snap, a tiny review..."
+              className="w-full resize-none bg-transparent border-none outline-none font-handwritten text-lg placeholder:text-muted-foreground"
+            />
+          </div>
 
           {mediaPreview && (
-            <div style={{ position: "relative", marginBottom: "15px", borderRadius: "12px", overflow: "hidden", border: "2px solid var(--color-border)" }}>
-              <button 
-                onClick={removeMedia}
-                style={{ position: "absolute", top: "10px", right: "10px", backgroundColor: "rgba(0,0,0,0.5)", color: "white", border: "none", borderRadius: "50%", padding: "5px", cursor: "pointer", zIndex: 10 }}
-              >
-                <X size={16} />
-              </button>
-              {mediaFile?.type.startsWith("video/") ? (
-                <video src={mediaPreview} controls style={{ width: "100%", maxHeight: "300px", display: "block" }} />
+            <div className="relative rounded-xl overflow-hidden border border-border mt-2">
+              {mediaPreview.type === "image" ? (
+                <img src={mediaPreview.url} className="w-full max-h-64 object-cover" />
               ) : (
-                <img src={mediaPreview} alt="Preview" style={{ width: "100%", maxHeight: "300px", objectFit: "cover", display: "block" }} />
+                <video src={mediaPreview.url} className="w-full max-h-64 object-cover" controls />
               )}
+              <button
+                onClick={removeMedia}
+                className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "2px dashed var(--color-border)", paddingTop: "15px", flexWrap: "wrap", gap: "10px" }}>
-            <div style={{ display: "flex", gap: "15px" }}>
-              <button onClick={() => fileInputRef.current?.click()} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-maroon)", display: "flex", alignItems: "center", gap: "5px", fontWeight: "bold" }}>
-                <ImageIcon size={18} /> <span className="hide-mobile">Photo/Video</span>
-              </button>
-              <input type="file" accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleFileChange} />
-              
-              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "5px", color: "var(--color-maroon)", fontWeight: "bold" }}>
-                <Film size={18} />
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-dashed border-border">
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 text-primary transition">
+                <ImageIcon className="w-4 h-4" /> Photo/Video
+                <input type="file" hidden accept="image/*,video/*" onChange={handleFileChange} />
+              </label>
+
+              <div className="relative inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 text-primary transition">
+                <Film className="w-4 h-4" />
                 <select 
                   value={selectedMovieId} 
                   onChange={(e) => setSelectedMovieId(e.target.value)}
-                  style={{ background: "none", border: "none", outline: "none", color: "var(--color-maroon)", cursor: "pointer", fontFamily: "inherit", maxWidth: "150px" }}
+                  className="bg-transparent border-none outline-none cursor-pointer max-w-[120px]"
                 >
                   <option value="">Link Movie</option>
                   {movies.map(m => (
@@ -157,34 +207,58 @@ export default function CreatePost({ onPostCreated }: { onPostCreated: () => voi
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <select 
-                value={privacy} 
-                onChange={(e) => setPrivacy(e.target.value)}
-                style={{ backgroundColor: "var(--color-gingham)", border: "1px solid var(--color-border)", padding: "5px 10px", borderRadius: "8px", outline: "none", fontFamily: "inherit", cursor: "pointer" }}
-              >
-                <option value="PUBLIC">🌎 Public</option>
-                <option value="FRIENDS">👥 Friends</option>
-                <option value="ME">🔒 Only Me</option>
-              </select>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-secondary hover:bg-secondary/80 transition text-foreground">
+                    <AudienceIcon className="w-4 h-4" />
+                    {audienceMeta[audience].label}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2 bg-card rounded-xl border border-border shadow-lg">
+                  <div className="space-y-1">
+                    {(Object.keys(audienceMeta) as Audience[]).map((a) => {
+                      const Meta = audienceMeta[a];
+                      const Icon = Meta.icon;
+                      return (
+                        <button
+                          key={a}
+                          onClick={() => setAudience(a)}
+                          className={`flex items-start gap-2 w-full text-left p-2 rounded-lg hover:bg-secondary transition ${audience === a ? "bg-secondary" : ""}`}
+                        >
+                          <Icon className="w-4 h-4 mt-0.5" />
+                          <div>
+                            <div className="text-sm font-bold">{Meta.label}</div>
+                            <div className="text-xs text-muted-foreground font-handwritten">{Meta.hint}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-              <button 
-                onClick={handlePost} 
-                disabled={loading || (!content.trim() && !mediaFile)}
-                className="btn-primary" 
-                style={{ padding: "8px 20px", display: "flex", alignItems: "center", gap: "5px", opacity: (loading || (!content.trim() && !mediaFile)) ? 0.5 : 1 }}
-              >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : "Post"}
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={reset} 
+                  disabled={loading}
+                  className="px-4 py-1.5 text-sm font-bold text-muted-foreground hover:bg-secondary rounded-full transition"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={submit} 
+                  disabled={loading || (!content.trim() && !mediaFile)}
+                  className="px-4 py-1.5 text-sm font-bold bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Post
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <style jsx>{`
-        @media (max-width: 600px) {
-          .hide-mobile { display: none; }
-        }
-      `}</style>
+      )}
     </div>
   );
 }
