@@ -3,6 +3,7 @@ import { Inter, Caveat } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
+import PwaRegister from "@/components/PwaRegister";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,8 +16,24 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "WatchKnot | Cozy Movie Journal",
-  description: "A cozy, vintage-aesthetic social platform for friends to collect, share, and watch movies together.",
+  title: "WatchKnot | Cozy Movie Journal & Watch Party",
+  description: "A cozy, vintage-aesthetic social platform for friends to collect, review, and watch movies together.",
+  openGraph: {
+    title: "WatchKnot",
+    description: "Your personalized virtual movie theater and journal.",
+    url: "https://watchknot.com",
+    siteName: "WatchKnot",
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WatchKnot",
+    description: "Your personalized virtual movie theater and journal.",
+    images: ["/og-image.jpg"],
+  },
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -42,6 +59,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${caveat.variable}`}>
+        <PwaRegister />
         <Providers>
           <Navbar />
           <main>{children}</main>

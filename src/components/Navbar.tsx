@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Film, Home, User, LogOut, Moon, Sun, Menu, X, Plus } from "lucide-react";
+import { Film, Home, User, LogOut, Moon, Sun, Menu, X, Plus, ShieldAlert, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -29,8 +29,13 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Home", icon: <Home size={18} /> },
     { href: "/movies", label: "Movies", icon: <Film size={18} /> },
+    { href: "/downloads", label: "Downloads", icon: <Download size={18} /> },
     { href: "/profile", label: "Profile", icon: <User size={18} /> },
   ];
+
+  if (user?.email === "labonysur473@gmail.com") {
+    navLinks.push({ href: "/admin", label: "Admin", icon: <ShieldAlert size={18} /> });
+  }
 
   const linkStyle = (href: string) => ({
     display: "flex", alignItems: "center", gap: "6px",

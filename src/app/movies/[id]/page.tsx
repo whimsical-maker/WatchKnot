@@ -4,13 +4,20 @@ import Link from "next/link";
 import { ArrowLeft, Star, Calendar, Ticket, Film } from "lucide-react";
 import EditMovieModal from "@/components/EditMovieModal";
 import MediaPlayer from "@/components/MediaPlayer";
+import DownloadButton from "@/components/DownloadButton";
 
 export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
   const movie = await prisma.movie.findUnique({
     where: { id },
-    include: { addedBy: true },
+    include: { 
+      addedBy: true,
+      seasonList: {
+        include: { episodes: { orderBy: { episodeNumber: "asc" } } },
+        orderBy: { seasonNumber: "asc" }
+      }
+    },
   });
 
   if (!movie) {
@@ -75,7 +82,51 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
               <Link href={`/movies/${movie.id}/ticket`} className="btn-primary" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "16px 32px", fontSize: "1.2rem", borderRadius: "12px", textDecoration: "none", flex: 1 }}>
                 <Ticket size={24} /> Get Digital Ticket
               </Link>
+              {movie.videoUrl && (
+                <div style={{ flex: 1, display: "flex", alignItems: "stretch", justifyContent: "center" }}>
+                  <DownloadButton metadata={{
+                    id: movie.id,
+                    title: movie.title,
+                    posterUrl: movie.posterUrl || undefined,
+                    videoUrl: movie.videoUrl,
+                    type: "MOVIE"
+                  }} />
+                </div>
+              )}
             </div>
+
+            {/* TV Show Seasons & Episodes */}
+            {movie.seasonList && movie.seasonList.length > 0 && (
+              <div style={{ marginTop: "40px" }}>
+                <h3 className="caveat" style={{ fontSize: "2rem", marginBottom: "16px", borderBottom: "2px dashed var(--color-border)", paddingBottom: "8px" }}>Episodes</h3>
+                {movie.seasonList.map(season => (
+                  <div key={season.id} style={{ marginBottom: "24px" }}>
+                    <h4 style={{ fontSize: "1.2rem", marginBottom: "12px", color: "var(--color-maroon)" }}>Season {season.seasonNumber} {season.title && `- ${season.title}`}</h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {season.episodes.map(episode => (
+                        <div key={episode.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", backgroundColor: "var(--color-bg)", borderRadius: "8px", border: "1px solid var(--color-border)" }}>
+                          <div style={{ fontWeight: "bold" }}>
+                            {episode.episodeNumber}. {episode.title || `Episode ${episode.episodeNumber}`}
+                            {episode.duration && <span style={{ marginLeft: "10px", fontSize: "0.8rem", color: "#888", fontWeight: "normal" }}>{episode.duration}m</span>}
+                          </div>
+                          <div>
+                            <DownloadButton metadata={{
+                              id: episode.id,
+                              title: `${movie.title} - S${season.seasonNumber} E${episode.episodeNumber}`,
+                              posterUrl: movie.posterUrl || undefined,
+                              videoUrl: episode.videoUrl,
+                              type: "EPISODE",
+                              season: season.seasonNumber,
+                              episodeNumber: episode.episodeNumber
+                            }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

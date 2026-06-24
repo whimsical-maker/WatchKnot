@@ -19,10 +19,29 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isBanned, setIsBanned] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
+      if (firebaseUser) {
+        try {
+          const token = await firebaseUser.getIdToken();
+          const res = await fetch("/api/user/me", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user?.isBanned) {
+              setIsBanned(true);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        setIsBanned(false);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -32,6 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return null;
     return await user.getIdToken();
   };
+
+  if (isBanned) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "var(--color-bg)", color: "var(--color-text)", textAlign: "center", padding: "20px" }}>
+        <h1 className="caveat" style={{ fontSize: "4rem", color: "var(--color-maroon)", margin: 0 }}>Banned</h1>
+        <p style={{ fontSize: "1.2rem", maxWidth: "400px", marginTop: "20px" }}>
+          You have been banned from WatchKnot. You can no longer access the platform.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, loading, getToken }}>
