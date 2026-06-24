@@ -134,10 +134,6 @@ export default function LoginPage() {
                 <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: "10px", padding: "12px", fontSize: "1.1rem" }}>
                   {loading ? "Logging in..." : "Log In"}
                 </button>
-                <button type="button" onClick={() => signIn("google")} className="btn-primary" style={{ backgroundColor: "var(--color-card)", color: "var(--color-text)", border: "1px solid var(--color-border)", padding: "12px", fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style={{ width: "20px", height: "20px" }} />
-                  Continue with Google
-                </button>
               </form>
 
               <div style={{ textAlign: "center", marginTop: "20px" }}>
@@ -213,10 +209,6 @@ export default function LoginPage() {
 
                 <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: "10px", padding: "12px", fontSize: "1.1rem" }}>
                   {loading ? "Creating..." : "Create Account"}
-                </button>
-                <button type="button" onClick={() => signIn("google")} className="btn-primary" style={{ backgroundColor: "var(--color-card)", color: "var(--color-text)", border: "1px solid var(--color-border)", padding: "12px", fontSize: "1.1rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" style={{ width: "20px", height: "20px" }} />
-                  Continue with Google
                 </button>
               </form>
 
