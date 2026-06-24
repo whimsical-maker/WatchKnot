@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       }
     });
 
-    const friends = friendships.map(f => f.user1Id === userId ? f.user2 : f.user1);
+    const friends = friendships.map((f: any) => f.user1Id === userId ? f.user2 : f.user1);
 
     // Get pending requests (received)
     const pendingRequests = await prisma.friendship.findMany({
