@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PageSkeleton } from "@/components/PageSkeleton";
+import { FriendsSkeleton } from "@/components/PageSkeleton";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Friends() {
@@ -161,7 +161,7 @@ export default function Friends() {
             Friends
           </h1>
           <p className="text-muted-foreground mb-8 sm:mb-10 text-sm sm:text-base">Your movie night crew</p>
-          <PageSkeleton />
+          <FriendsSkeleton />
         </div>
       </div>
     );
