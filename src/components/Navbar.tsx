@@ -1,0 +1,165 @@
+"use client";
+
+import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Film, Home, User, LogOut, Moon, Sun, Menu, X, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+
+export default function Navbar() {
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  const [dark, setDark] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark") {
+      setDark(true);
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    if (next) {
+      document.documentElement.setAttribute("data-theme", "dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  const navLinks = [
+    { href: "/", label: "Home", icon: <Home size={18} /> },
+    { href: "/movies", label: "Movies", icon: <Film size={18} /> },
+    { href: "/profile", label: "Profile", icon: <User size={18} /> },
+  ];
+
+  return (
+    <nav style={{
+      position: "sticky", top: 0, zIndex: 100,
+      backgroundColor: "var(--color-card)",
+      borderBottom: "2px dashed var(--color-border)",
+      padding: "0 24px",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+    }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: "64px" }}>
+        
+        {/* Logo */}
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <Film size={28} color="var(--color-maroon)" />
+          <span className="caveat" style={{ fontSize: "1.8rem", color: "var(--color-maroon)" }}>WatchKnot</span>
+        </Link>
+
+        {/* Desktop Nav */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }} className="desktop-nav">
+          {session && navLinks.map(link => (
+            <Link key={link.href} href={link.href} style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "8px 14px", borderRadius: "8px",
+              fontWeight: pathname === link.href ? "bold" : "normal",
+              color: pathname === link.href ? "var(--color-maroon)" : "var(--color-text)",
+              backgroundColor: pathname === link.href ? "rgba(128,0,0,0.08)" : "transparent",
+              transition: "all 0.2s", fontSize: "0.95rem"
+            }}>
+              {link.icon} {link.label}
+            </Link>
+          ))}
+
+          {session && (
+            <Link href="/movies/add" style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "8px 16px", borderRadius: "8px",
+              backgroundColor: "var(--color-maroon)", color: "white",
+              fontWeight: "bold", fontSize: "0.9rem", transition: "opacity 0.2s"
+            }}>
+              <Plus size={16} /> Add Movie
+            </Link>
+          )}
+
+          <button onClick={toggleTheme} style={{
+            background: "none", border: "1px solid var(--color-border)",
+            borderRadius: "8px", padding: "8px", cursor: "pointer",
+            color: "var(--color-text)", display: "flex", alignItems: "center"
+          }}>
+            {dark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {session ? (
+            <button onClick={() => signOut({ callbackUrl: "/login" })} style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              background: "none", border: "1px solid var(--color-border)",
+              borderRadius: "8px", padding: "8px 14px", cursor: "pointer",
+              color: "var(--color-text)", fontSize: "0.9rem"
+            }}>
+              <LogOut size={16} /> Sign Out
+            </button>
+          ) : (
+            <Link href="/login" style={{
+              padding: "8px 20px", borderRadius: "8px",
+              backgroundColor: "var(--color-maroon)", color: "white",
+              fontWeight: "bold", fontSize: "0.9rem"
+            }}>
+              Sign In
+            </Link>
+          )}
+        </div>
+
+        {/* Mobile menu button */}
+        <button onClick={() => setMenuOpen(!menuOpen)} style={{
+          display: "none", background: "none", border: "none",
+          cursor: "pointer", color: "var(--color-text)"
+        }} className="mobile-menu-btn">
+          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div style={{
+          borderTop: "1px dashed var(--color-border)",
+          padding: "16px", display: "flex", flexDirection: "column", gap: "8px"
+        }}>
+          {session && navLinks.map(link => (
+            <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "10px 14px", borderRadius: "8px",
+              color: "var(--color-text)", fontSize: "1rem"
+            }}>
+              {link.icon} {link.label}
+            </Link>
+          ))}
+          {session && (
+            <Link href="/movies/add" onClick={() => setMenuOpen(false)} style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "10px 14px", borderRadius: "8px",
+              backgroundColor: "var(--color-maroon)", color: "white", fontWeight: "bold"
+            }}>
+              <Plus size={16} /> Add Movie
+            </Link>
+          )}
+          {session && (
+            <button onClick={() => signOut({ callbackUrl: "/login" })} style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              padding: "10px 14px", borderRadius: "8px",
+              background: "none", border: "1px solid var(--color-border)",
+              cursor: "pointer", color: "var(--color-text)", width: "100%"
+            }}>
+              <LogOut size={16} /> Sign Out
+            </button>
+          )}
+        </div>
+      )}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-nav { display: none !important; }
+          .mobile-menu-btn { display: flex !important; }
+        }
+      `}</style>
+    </nav>
+  );
+}
