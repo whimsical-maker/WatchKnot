@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Film, Star, Plus, Loader2, Calendar } from "lucide-react";
+import { Film, Star, Plus, Loader2, Calendar, Clapperboard, Edit2 } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -64,7 +64,7 @@ export default function MoviesPage() {
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px", flexWrap: "wrap", gap: "16px" }}>
           <div>
-            <h1 className="caveat" style={{ fontSize: "3.5rem", margin: 0 }}>🎬 My Movies</h1>
+            <h1 className="caveat" style={{ fontSize: "3.5rem", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}><Clapperboard size={44} color="var(--color-maroon)" /> My Movies</h1>
             <p style={{ color: "#888", marginTop: "4px" }}>{movies.length} film{movies.length !== 1 ? "s" : ""} in your collection</p>
           </div>
           <Link href="/movies/add" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 24px", borderRadius: "12px", backgroundColor: "var(--color-maroon)", color: "white", fontWeight: "bold", fontSize: "1rem", textDecoration: "none" }}>
@@ -111,7 +111,7 @@ export default function MoviesPage() {
                     onClick={(e) => { e.stopPropagation(); setEditingMovie(movie); }} 
                     style={{ position: "absolute", top: "8px", right: "8px", background: "white", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.2)", zIndex: 20 }}
                   >
-                    ✏️
+                    <Edit2 size={16} color="var(--color-maroon)" />
                   </button>
                 )}
               </motion.div>

@@ -4,7 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Film, Ticket, Users, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -25,34 +26,67 @@ export default function Home() {
   }
 
   return (
-    <main style={{ padding: "40px", maxWidth: "800px", margin: "0 auto", minHeight: "calc(100vh - 64px)" }}>
-      <div className="cute-card" style={{ textAlign: "center", marginBottom: "40px" }}>
-        <h1 className="caveat" style={{ fontSize: "4rem", marginBottom: "10px" }}>Welcome to WatchKnot</h1>
-        <p style={{ fontSize: "1.2rem", color: "var(--color-maroon)", marginBottom: "30px" }}>
-          Hi {user.displayName || "Movie Lover"}! A cozy, vintage-aesthetic social platform for friends to collect, share, and watch movies together.
-        </p>
-        <Link href="/movies">
-          <button className="btn-primary" style={{ fontSize: "1.2rem", padding: "12px 24px" }}>Go to My Movies</button>
-        </Link>
-      </div>
+    <main style={{ padding: "40px", maxWidth: "1000px", margin: "0 auto", minHeight: "calc(100vh - 64px)" }}>
+      {/* Hero Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="cute-card" 
+        style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: "40px", 
+          marginBottom: "60px",
+          background: "var(--color-gingham)",
+          flexWrap: "wrap",
+          justifyContent: "center"
+        }}
+      >
+        <div style={{ flex: 1, minWidth: "300px", textAlign: "left" }}>
+          <h1 className="caveat" style={{ fontSize: "4.5rem", marginBottom: "10px", lineHeight: 1 }}>Welcome to WatchKnot</h1>
+          <p style={{ fontSize: "1.2rem", color: "var(--color-maroon)", marginBottom: "30px", fontWeight: 500 }}>
+            Hi {user.displayName || "Movie Lover"}! Grab some popcorn and log your favorite films in this cozy, vintage-aesthetic scrapbook.
+          </p>
+          <Link href="/movies">
+            <button className="btn-primary" style={{ fontSize: "1.2rem", padding: "14px 28px", display: "flex", alignItems: "center", gap: "10px" }}>
+              <Film size={20} /> Go to My Collection
+            </button>
+          </Link>
+        </div>
+        <motion.div 
+          initial={{ scale: 0.8, rotate: -5 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 100, delay: 0.2 }}
+          style={{ width: "300px", height: "300px", borderRadius: "20px", overflow: "hidden", border: "4px solid var(--color-border)", backgroundColor: "var(--color-bg)", boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
+        >
+          <img src="/vintage-tv.png" alt="Vintage TV" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </motion.div>
+      </motion.div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-        <div className="cute-card">
-          <h2 className="caveat" style={{ fontSize: "2rem", marginBottom: "10px" }}>Movie Journals</h2>
-          <p>Collect your favorite movies and write personalized, cute journal entries for each one.</p>
-        </div>
-        <div className="cute-card">
-          <h2 className="caveat" style={{ fontSize: "2rem", marginBottom: "10px" }}>Digital Tickets</h2>
-          <p>Book beautifully crafted vintage digital movie tickets complete with generated personal messages.</p>
-        </div>
-        <div className="cute-card">
-          <h2 className="caveat" style={{ fontSize: "2rem", marginBottom: "10px" }}>Watch Together</h2>
-          <p>Sync your screen with friends in perfectly timed real-time watch rooms with live chat.</p>
-        </div>
-        <div className="cute-card">
-          <h2 className="caveat" style={{ fontSize: "2rem", marginBottom: "10px" }}>Aesthetic Vibe</h2>
-          <p>Wrapped in a warm maroon and cream color palette with handwritten Caveat typography.</p>
-        </div>
+      {/* Features Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "24px" }}>
+        {[
+          { icon: <Film size={32} />, title: "Movie Journals", desc: "Collect your favorite movies and write personalized, cute journal entries for each one." },
+          { icon: <Ticket size={32} />, title: "Digital Tickets", desc: "Book beautifully crafted vintage digital movie tickets complete with personal messages." },
+          { icon: <Users size={32} />, title: "Watch Together", desc: "Sync your screen with friends in perfectly timed real-time watch rooms." },
+          { icon: <Sparkles size={32} />, title: "Aesthetic Vibe", desc: "Wrapped in a warm maroon and cream color palette with handwritten Caveat typography." }
+        ].map((feature, i) => (
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 + (i * 0.1) }}
+            className="cute-card"
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}
+          >
+            <div style={{ color: "var(--color-maroon)", marginBottom: "16px", backgroundColor: "var(--color-bg)", padding: "16px", borderRadius: "50%", border: "2px dashed var(--color-border)" }}>
+              {feature.icon}
+            </div>
+            <h2 className="caveat" style={{ fontSize: "2rem", marginBottom: "10px" }}>{feature.title}</h2>
+            <p style={{ color: "var(--color-text)", opacity: 0.8 }}>{feature.desc}</p>
+          </motion.div>
+        ))}
       </div>
     </main>
   );

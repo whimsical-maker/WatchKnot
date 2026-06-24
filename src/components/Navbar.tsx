@@ -7,33 +7,19 @@ import { Film, Home, User, LogOut, Moon, Sun, Menu, X, Plus } from "lucide-react
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useTheme } from "next-themes";
 
 export default function Navbar() {
   const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const [dark, setDark] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") {
-      setDark(true);
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
+    setMounted(true);
   }, []);
-
-  const toggleTheme = () => {
-    const next = !dark;
-    setDark(next);
-    if (next) {
-      document.documentElement.setAttribute("data-theme", "dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-      localStorage.setItem("theme", "light");
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -91,13 +77,15 @@ export default function Navbar() {
             </Link>
           )}
 
-          <button onClick={toggleTheme} style={{
-            background: "none", border: "1px solid var(--color-border)",
-            borderRadius: "8px", padding: "8px", cursor: "pointer",
-            color: "var(--color-text)", display: "flex", alignItems: "center"
-          }}>
-            {dark ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          {mounted && (
+            <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")} style={{
+              background: "none", border: "1px solid var(--color-border)",
+              borderRadius: "8px", padding: "8px", cursor: "pointer",
+              color: "var(--color-text)", display: "flex", alignItems: "center"
+            }}>
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          )}
 
           {user ? (
             <button onClick={handleSignOut} style={{
