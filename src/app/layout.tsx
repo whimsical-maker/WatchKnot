@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   title: "WatchKnot | Cozy Movie Journal & Watch Party",
   description: "A cozy, vintage-aesthetic social platform for friends to collect, review, and watch movies together.",
   applicationName: "WatchKnot",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "WatchKnot",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

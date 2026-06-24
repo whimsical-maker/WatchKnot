@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <!-- Custom Red Gingham Pattern -->
+    <pattern id="gingham" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="#FDFBF7"/>
+      <rect width="8" height="16" fill="#8B2635" fill-opacity="0.15"/>
+      <rect width="16" height="8" fill="#8B2635" fill-opacity="0.15"/>
+      <rect width="8" height="8" fill="#8B2635" fill-opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <!-- Whimsical Vintage Sparkles -->
+  <path d="M 30 40 Q 30 25 15 25 Q 30 25 30 10 Q 30 25 45 25 Q 30 25 30 40 Z" fill="#D48C9A"/>
+  <path d="M 175 150 Q 175 142 167 142 Q 175 142 175 134 Q 175 142 183 142 Q 175 142 175 150 Z" fill="#D48C9A"/>
+  <path d="M 160 50 Q 160 45 155 45 Q 160 45 160 40 Q 160 45 165 45 Q 160 45 160 50 Z" fill="#8B2635"/>
+
+  <!-- TV Antennas -->
+  <line x1="100" y1="50" x2="60" y2="20" stroke="#5A1824" stroke-width="5" stroke-linecap="round"/>
+  <line x1="100" y1="50" x2="135" y2="15" stroke="#5A1824" stroke-width="5" stroke-linecap="round"/>
+  <!-- Antenna Balls -->
+  <circle cx="60" cy="20" r="4" fill="#8B2635" stroke="#5A1824" stroke-width="2"/>
+  <circle cx="135" cy="15" r="4" fill="#8B2635" stroke="#5A1824" stroke-width="2"/>
+
+  <!-- TV Legs -->
+  <line x1="60" y1="150" x2="45" y2="180" stroke="#5A1824" stroke-width="6" stroke-linecap="round"/>
+  <line x1="140" y1="150" x2="155" y2="180" stroke="#5A1824" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Main TV Body (Gingham Wrapped) -->
+  <rect x="25" y="50" width="150" height="100" rx="15" fill="url(#gingham)" stroke="#5A1824" stroke-width="6"/>
+
+  <!-- TV Face Plate (Cream) -->
+  <rect x="35" y="60" width="130" height="80" rx="10" fill="#FDFBF7" stroke="#5A1824" stroke-width="4"/>
+
+  <!-- TV Screen (Soft Pink) -->
+  <rect x="43" y="68" width="90" height="64" rx="8" fill="#FAE3E8" stroke="#5A1824" stroke-width="4"/>
+
+  <!-- TV Dials & Speaker (Right Side) -->
+  <circle cx="148" cy="78" r="7" fill="#8B2635" stroke="#5A1824" stroke-width="2"/>
+  <circle cx="148" cy="102" r="7" fill="#8B2635" stroke="#5A1824" stroke-width="2"/>
+  <line x1="141" y1="120" x2="155" y2="120" stroke="#5A1824" stroke-width="3" stroke-linecap="round"/>
+  <line x1="141" y1="126" x2="155" y2="126" stroke="#5A1824" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Romantic Heart on Screen -->
+  <path d="M 88 85 C 70 65, 52 90, 88 122 C 124 90, 106 65, 88 85 Z" fill="#8B2635" stroke="#5A1824" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Play Button Cutout inside Heart -->
+  <polygon points="82,92 82,106 95,99" fill="#FDFBF7" stroke="#5A1824" stroke-width="2" stroke-linejoin="round"/>
+
+  <!-- The Coquette Bow / "WatchKnot" -->
+  <g transform="translate(0, -2)">
+    <!-- Ribbon Tails -->
+    <path d="M 100 52 Q 85 45 65 52" fill="none" stroke="#D48C9A" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 100 52 Q 115 45 135 52" fill="none" stroke="#D48C9A" stroke-width="5" stroke-linecap="round"/>
+    <!-- Bow Loops -->
+    <path d="M 100 52 C 75 35, 75 65, 100 52" fill="#D48C9A" stroke="#5A1824" stroke-width="3"/>
+    <path d="M 100 52 C 125 35, 125 65, 100 52" fill="#D48C9A" stroke="#5A1824" stroke-width="3"/>
+    <!-- Center Knot -->
+    <circle cx="100" cy="52" r="5" fill="#8B2635" stroke="#5A1824" stroke-width="2"/>
+  </g>
+</svg>

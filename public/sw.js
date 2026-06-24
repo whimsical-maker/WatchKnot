@@ -1,4 +1,5 @@
 const CACHE_NAME = 'watchknot-media-v1';
+const DYNAMIC_CACHE = 'watchknot-dynamic-v1';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -11,17 +12,33 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // We only want to intercept if we are looking for downloaded media.
-  // The offline manager will fetch the media and store it in cache.
-  // When the video player requests the media URL, we intercept it here.
-  
-  // Skip cross-origin non-GET requests
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http')) return;
+  if (url.pathname.startsWith('/api/')) return;
+
+  const isNavigation = event.request.mode === 'navigate';
+
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          return caches.open(DYNAMIC_CACHE).then((cache) => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) return cachedResponse;
+          });
+        })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Handle Range requests for video playback
         const rangeHeader = event.request.headers.get('range');
         if (rangeHeader) {
           return cachedResponse.blob().then((blob) => {
@@ -45,7 +62,18 @@ self.addEventListener('fetch', (event) => {
         }
         return cachedResponse;
       }
-      return fetch(event.request);
+
+      return fetch(event.request).then((networkResponse) => {
+        if (networkResponse.ok && networkResponse.type === 'basic') {
+          const responseClone = networkResponse.clone();
+          caches.open(DYNAMIC_CACHE).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch((err) => {
+        console.error('Offline fetch failed:', err);
+      });
     })
   );
 });
