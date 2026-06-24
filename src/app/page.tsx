@@ -6,12 +6,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, Film, Ticket, Users, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { db } from "@/lib/firebase";
+import { collection, query, limit, onSnapshot } from "firebase/firestore";
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   const [playableMovies, setPlayableMovies] = useState<any[]>([]);
+  const [activeRooms, setActiveRooms] = useState<any[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -23,6 +26,17 @@ export default function Home() {
         .catch(console.error);
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    // Listen to active watch rooms
+    const q = query(collection(db, "watchRooms"), limit(6));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const rooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setActiveRooms(rooms);
+    });
+    return () => unsub();
+  }, [user]);
 
   if (loading || !user) {
     return (
@@ -70,6 +84,43 @@ export default function Home() {
           <img src="/vintage-tv.png" alt="Vintage TV" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </motion.div>
       </motion.div>
+
+      {/* Active Watch Rooms Lobby */}
+      {activeRooms.length > 0 && (
+        <div style={{ marginBottom: "60px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", borderBottom: "2px dashed var(--color-border)", paddingBottom: "10px", marginBottom: "20px" }}>
+            <h2 className="caveat" style={{ fontSize: "3rem", margin: 0 }}>Live Watch Rooms</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "var(--color-maroon)", color: "white", padding: "4px 10px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "bold" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#ffcccb", animation: "pulse 1.5s infinite" }} /> LIVE
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+            {activeRooms.map((room, i) => (
+              <motion.div key={room.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+                <Link href={`/movies/${room.movieId}/room/${room.id}`} style={{ textDecoration: "none" }}>
+                  <div className="cute-card" style={{ display: "flex", flexDirection: "column", padding: "20px", cursor: "pointer", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "4px", backgroundColor: "var(--color-maroon)" }} />
+                    <h3 style={{ margin: "0 0 10px 0", fontSize: "1.2rem", color: "var(--color-text)", fontWeight: "bold" }}>{room.movieTitle}</h3>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#888", fontSize: "0.9rem" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>Hosted by {room.hostName}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px", backgroundColor: "var(--color-bg)", padding: "4px 8px", borderRadius: "8px", border: "1px solid var(--color-border)" }}>
+                        <Users size={14} /> {room.participants?.length || 1}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+          <style jsx>{`
+            @keyframes pulse {
+              0% { opacity: 1; }
+              50% { opacity: 0.5; }
+              100% { opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
 
       {/* Watch Now Section */}
       {playableMovies.length > 0 && (
