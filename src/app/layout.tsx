@@ -17,11 +17,20 @@ const caveat = Caveat({
 
 export const metadata: Metadata = {
   title: "WatchKnot | Cozy Movie Journal & Watch Party",
-  description: "A cozy, vintage-aesthetic social platform for friends to collect, review, and watch movies together.",
+  description: "A cozy, vintage-aesthetic social platform for friends to collect, review, and watch movies together. Create your digital movie journal and host real-time synchronized watch parties.",
+  applicationName: "WatchKnot",
+  authors: [{ name: "WatchKnot Team" }],
+  generator: "Next.js",
+  keywords: ["movie journal", "watch party", "virtual movie theater", "social platform", "movie tracker", "watch together", "sync movies", "online theater"],
+  creator: "WatchKnot",
+  publisher: "WatchKnot",
+  alternates: {
+    canonical: "https://watchknot.vercel.app",
+  },
   openGraph: {
-    title: "WatchKnot",
+    title: "WatchKnot | Cozy Movie Journal & Watch Party",
     description: "Your personalized virtual movie theater and journal.",
-    url: "https://watchknot.com",
+    url: "https://watchknot.vercel.app",
     siteName: "WatchKnot",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
     locale: "en_US",
@@ -29,7 +38,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "WatchKnot",
+    title: "WatchKnot | Cozy Movie Journal & Watch Party",
     description: "Your personalized virtual movie theater and journal.",
     images: ["/og-image.jpg"],
   },
@@ -41,9 +50,29 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "WatchKnot",
+    url: "https://watchknot.vercel.app",
+    description: "A cozy, vintage-aesthetic social platform for friends to collect, review, and watch movies together with synchronized watch parties.",
+    applicationCategory: "SocialNetworkingApplication",
+    genre: "Entertainment",
+    operatingSystem: "Any",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD"
+    }
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
