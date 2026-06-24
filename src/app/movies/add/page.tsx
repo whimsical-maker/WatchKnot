@@ -16,9 +16,42 @@ export default function AddMoviePage() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({ title: "", year: "", genre: "", posterUrl: "", rating: "", description: "" });
 
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [scraping, setScraping] = useState(false);
+
   useEffect(() => {
     if (!authLoading && !user) router.push("/login");
-  }, [user, authLoading]);
+  }, [user, authLoading, router]);
+
+  const handleScrape = async () => {
+    if (!scrapeUrl) return;
+    setScraping(true);
+    setError("");
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/movies/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url: scrapeUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to scrape");
+
+      setForm((prev) => ({
+        ...prev,
+        title: data.title || prev.title,
+        year: data.year ? String(data.year) : prev.year,
+        genre: GENRES.includes(data.genre) ? data.genre : prev.genre,
+        posterUrl: data.posterUrl || prev.posterUrl,
+        rating: data.rating ? String(data.rating) : prev.rating,
+        description: data.description || prev.description,
+      }));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setScraping(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +91,16 @@ export default function AddMoviePage() {
           </div>
 
           {error && <p style={{ color: "red", textAlign: "center", marginBottom: "16px", fontSize: "0.9rem" }}>{error}</p>}
+
+          <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "var(--color-bg)", borderRadius: "10px", border: "2px dashed var(--color-border)" }}>
+            <label style={{ display: "block", fontWeight: "bold", marginBottom: "6px", fontSize: "0.9rem" }}>Auto-Fill via Link (IMDb, TMDB)</label>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <input type="url" placeholder="https://..." value={scrapeUrl} onChange={e => setScrapeUrl(e.target.value)} style={{ ...inputStyle, padding: "11px" }} />
+              <button type="button" onClick={handleScrape} disabled={scraping || !scrapeUrl} className="btn-primary" style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+                {scraping ? <Loader2 size={18} className="animate-spin" /> : "Auto-Fill"}
+              </button>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
