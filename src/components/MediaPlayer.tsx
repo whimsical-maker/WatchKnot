@@ -4,10 +4,13 @@ import { Play, Ticket, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function MediaPlayer({ videoUrl, title, movieId }: { videoUrl: string, title: string, movieId: string }) {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const searchParams = useSearchParams();
+  const autoPlay = searchParams.get("play") === "true";
+  
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [hasTicket, setHasTicket] = useState(false);
   const [loading, setLoading] = useState(true);
   const { user, getToken } = useAuth();

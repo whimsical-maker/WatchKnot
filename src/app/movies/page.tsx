@@ -122,8 +122,7 @@ export default function Movies() {
         year: form.year || new Date().getFullYear().toString(),
         description: form.description || undefined,
         posterUrl: form.posterUrl || undefined,
-        watch_url: form.watchUrl || undefined,
-        embed_url: form.embedUrl || undefined,
+        videoUrl: form.embedUrl || undefined,
         rating: form.rating ? parseFloat(form.rating) : undefined,
         total_seasons: form.totalSeasons ? parseInt(form.totalSeasons) : undefined,
       };
@@ -401,12 +400,38 @@ export default function Movies() {
                         </span>
                       </div>
                     </div>
-                    <div className="p-3 sm:p-4">
+                    <div className="p-3 sm:p-4 pb-0">
                       <h3 className="font-display text-base sm:text-lg font-semibold text-foreground truncate">{movie.title}</h3>
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2 min-h-[40px]">{movie.description}</p>
                       <div className="flex items-center justify-between mt-2 sm:mt-3 text-xs text-muted-foreground">
                         <span>{movie.year}</span>
                       </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="p-3 sm:p-4 pt-3 mt-3 border-t border-border bg-muted/10">
+                      {movie.tickets && movie.tickets.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="warm" size="sm" className="flex-1 text-xs rounded-xl" onClick={(e) => { e.stopPropagation(); router.push(`/watch/${movie.id}`); }}>
+                            <Play className="w-3 h-3 mr-1" /> Watch
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1 text-xs rounded-xl" onClick={async (e) => { 
+                            e.stopPropagation(); 
+                            const newRoomId = Math.random().toString(36).substring(2, 10);
+                            toast({ title: "Room created", description: "Share the link with friends!" });
+                            router.push(`/movies/${movie.id}/room/${newRoomId}`);
+                          }}>
+                            <Users className="w-3 h-3 mr-1" /> Together
+                          </Button>
+                          <Button variant="outline" size="sm" className="px-3 rounded-xl bg-card" onClick={(e) => { e.stopPropagation(); router.push(`/movies/${movie.id}/ticket`)}}>
+                            <Ticket className="w-3.5 h-3.5 text-primary" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button variant="outline" size="sm" className="w-full text-xs rounded-xl border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={(e) => { e.stopPropagation(); router.push(`/movies/${movie.id}/book`); }}>
+                          <Ticket className="w-3.5 h-3.5 mr-1.5 text-primary" /> Get Ticket to Watch
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

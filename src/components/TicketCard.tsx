@@ -63,18 +63,18 @@ export default function TicketCard({ ticket, isNew = false, onShareWithFriend, c
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const canWatch = !!currentEmbedUrl;
+  const canWatch = true;
   const rotate = tilt(ticket.id);
   const screen = (parseInt(ticket.seat.replace(/\D/g, "") || "1") % 5) + 1;
 
   const handleWatchClick = () => {
-    if (!canWatch) return;
-    router.push(`/movies/${ticket.movieId}`);
+    if (!ticket.movieId) return;
+    router.push(`/watch/${ticket.movieId}`);
   };
 
   const handleWatchTogether = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!canWatch || !user || !ticket.movieId) return;
+    if (!user || !ticket.movieId) return;
     setCreatingRoom(true);
     try {
       const newRoomId = Math.random().toString(36).substring(2, 10);
@@ -436,28 +436,17 @@ export default function TicketCard({ ticket, isNew = false, onShareWithFriend, c
         </motion.div>
       </div>
 
-      {/* Free-source status badge */}
-      {showActions && !compact && (
-        <div className="flex justify-center mt-3">
-          <SourceStatus
-            url={currentEmbedUrl}
-            movieId={ticket.movieId}
-            movieTitle={ticket.movieTitle}
-            year={ticket.year}
-            onLinkUpdated={(u) => setCurrentEmbedUrl(u)}
-          />
-        </div>
-      )}
+
 
       {/* Action buttons */}
       {showActions && !compact && (
         <div className="flex justify-center gap-2 mt-3 flex-wrap">
-          {canWatch && (
+          {true && (
             <Button variant="warm" size="sm" className="text-xs rounded-full" onClick={(e) => { e.stopPropagation(); handleWatchClick(); }}>
               <Play className="w-3 h-3 mr-1" /> Watch Now
             </Button>
           )}
-          {canWatch && ticket.movieId && (
+          {ticket.movieId && (
             <Button variant="outline" size="sm" className="text-xs rounded-full" onClick={handleWatchTogether} disabled={creatingRoom}>
               {creatingRoom ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Users className="w-3 h-3 mr-1" />}
               Watch Together
@@ -482,26 +471,16 @@ export default function TicketCard({ ticket, isNew = false, onShareWithFriend, c
         </div>
       )}
 
-      {showActions && compact && (
-        <div className="mt-2">
-          <SourceStatus
-            url={currentEmbedUrl}
-            movieId={ticket.movieId}
-            movieTitle={ticket.movieTitle}
-            year={ticket.year}
-            onLinkUpdated={(u) => setCurrentEmbedUrl(u)}
-          />
-        </div>
-      )}
+
 
       {showActions && compact && (
         <div className="flex gap-1.5 mt-2 flex-wrap">
-          {canWatch && (
+          {true && (
             <Button variant="warm" size="sm" className="text-[10px] h-7 px-2 rounded-full" onClick={(e) => { e.stopPropagation(); handleWatchClick(); }}>
               <Play className="w-3 h-3 mr-0.5" /> Watch
             </Button>
           )}
-          {canWatch && ticket.movieId && (
+          {ticket.movieId && (
             <Button variant="ghost" size="sm" className="text-[10px] h-7 px-2" onClick={handleWatchTogether} disabled={creatingRoom}>
               {creatingRoom ? <Loader2 className="w-3 h-3 mr-0.5 animate-spin" /> : <Users className="w-3 h-3 mr-0.5" />} Together
             </Button>

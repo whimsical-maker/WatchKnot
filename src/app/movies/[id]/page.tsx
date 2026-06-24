@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Star, Calendar, Ticket, Film } from "lucide-react";
 import EditMovieModal from "@/components/EditMovieModal";
-import MediaPlayer from "@/components/MediaPlayer";
 import DownloadButton from "@/components/DownloadButton";
+import { Suspense } from "react";
 
 export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,12 +31,7 @@ export default async function MovieDetailPage({ params }: { params: Promise<{ id
           <ArrowLeft size={16} /> Back to Movies
         </Link>
         
-        {/* Media Player Section */}
-        {movie.videoUrl && (
-          <div style={{ marginBottom: "30px" }}>
-            <MediaPlayer videoUrl={movie.videoUrl} title={movie.title} movieId={movie.id} />
-          </div>
-        )}
+
 
         <div style={{ display: "flex", gap: "40px", flexWrap: "wrap", backgroundColor: "white", padding: "30px", borderRadius: "16px", boxShadow: "0 10px 30px rgba(0,0,0,0.05)", position: "relative" }}>
           
