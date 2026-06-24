@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getAuthUser } from "@/lib/getAuthUser";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+export async function GET(req: Request) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   const movies = await prisma.movie.findMany({
-    where: { addedById: session.user.id },
+    where: { addedById: user.uid },
     orderBy: { createdAt: "desc" },
   });
 
@@ -16,12 +15,18 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
   const { title, year, genre, posterUrl, rating, description } = await req.json();
-
   if (!title) return NextResponse.json({ message: "Title is required" }, { status: 400 });
+
+  // Ensure user exists in DB
+  await prisma.user.upsert({
+    where: { id: user.uid },
+    update: {},
+    create: { id: user.uid, email: user.email, name: user.name, emailVerified: new Date() },
+  });
 
   const movie = await prisma.movie.create({
     data: {
@@ -31,7 +36,7 @@ export async function POST(req: Request) {
       posterUrl: posterUrl || null,
       rating: rating ? parseFloat(rating) : null,
       description: description || null,
-      addedById: session.user.id,
+      addedById: user.uid,
     },
   });
 

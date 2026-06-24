@@ -1,14 +1,13 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UserPlus, Check, User, Search, Loader2 } from "lucide-react";
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession();
+  const { user, loading: authLoading, getToken } = useAuth();
   const router = useRouter();
-
   const [friends, setFriends] = useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [searchEmail, setSearchEmail] = useState("");
@@ -16,150 +15,118 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    } else if (status === "authenticated") {
-      fetchFriends();
-    }
-  }, [status, router]);
+    if (!authLoading && !user) router.push("/login");
+    if (!authLoading && user) fetchFriends();
+  }, [user, authLoading]);
 
   const fetchFriends = async () => {
-    try {
-      const res = await fetch("/api/friends");
-      if (res.ok) {
-        const data = await res.json();
-        setFriends(data.friends || []);
-        setPendingRequests(data.pendingRequests || []);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    const token = await getToken();
+    const res = await fetch("/api/friends", { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) {
+      const data = await res.json();
+      setFriends(data.friends || []);
+      setPendingRequests(data.pendingRequests || []);
     }
+    setLoading(false);
   };
 
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
-    if (!searchEmail) return;
-
-    try {
-      const res = await fetch("/api/friends", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ADD_BY_EMAIL", email: searchEmail }),
-      });
-      const data = await res.json();
-      setMessage(data.message);
-      setSearchEmail("");
-    } catch (err) {
-      setMessage("Error sending request");
-    }
+    const token = await getToken();
+    const res = await fetch("/api/friends", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "ADD_BY_EMAIL", email: searchEmail }),
+    });
+    const data = await res.json();
+    setMessage(data.message);
+    setSearchEmail("");
   };
 
-  const handleAccept = async (targetUserId: String) => {
-    try {
-      const res = await fetch("/api/friends", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ACCEPT", targetUserId }),
-      });
-      if (res.ok) {
-        fetchFriends(); // Refresh list
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const handleAccept = async (targetUserId: string) => {
+    const token = await getToken();
+    const res = await fetch("/api/friends", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "ACCEPT", targetUserId }),
+    });
+    if (res.ok) fetchFriends();
   };
 
-  if (status === "loading" || loading) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", backgroundColor: "var(--color-bg)" }}>
-        <Loader2 className="animate-spin" size={40} color="var(--color-maroon)" />
-      </div>
-    );
+  if (authLoading || loading) {
+    return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "60vh" }}><Loader2 className="animate-spin" size={40} color="var(--color-maroon)" /></div>;
   }
 
   return (
-    <div style={{ minHeight: "100vh", padding: "40px 20px", backgroundColor: "var(--color-bg)" }}>
-      <div style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gap: "30px", gridTemplateColumns: "1fr 1fr" }}>
-        
+    <div style={{ minHeight: "calc(100vh - 64px)", padding: "40px 20px", backgroundColor: "var(--color-bg)" }}>
+      <div style={{ maxWidth: "800px", margin: "0 auto", display: "grid", gap: "24px", gridTemplateColumns: "1fr 1fr" }}>
+
         {/* Profile Card */}
         <div className="cute-card" style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", gap: "20px" }}>
-          <div style={{ width: "80px", height: "80px", borderRadius: "50%", backgroundColor: "var(--color-accent)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-            <User size={40} />
+          <div style={{ width: "72px", height: "72px", borderRadius: "50%", backgroundColor: "var(--color-maroon)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+            <User size={36} />
           </div>
           <div>
-            <h1 className="caveat" style={{ fontSize: "3rem", margin: 0, color: "var(--color-text)" }}>{session?.user?.name || "Movie Lover"}</h1>
-            <p style={{ color: "var(--color-maroon)", margin: 0 }}>{session?.user?.email}</p>
+            <h1 className="caveat" style={{ fontSize: "2.8rem", margin: 0 }}>{user?.displayName || "Movie Lover"}</h1>
+            <p style={{ color: "var(--color-maroon)", margin: 0, fontSize: "0.95rem" }}>{user?.email}</p>
           </div>
         </div>
 
-        {/* Add Friend Section */}
+        {/* Add Friend */}
         <div className="cute-card">
-          <h2 className="caveat" style={{ fontSize: "2rem", marginTop: 0, borderBottom: "2px dashed var(--color-border)", paddingBottom: "10px" }}>Add a Friend</h2>
+          <h2 className="caveat" style={{ fontSize: "1.8rem", marginTop: 0, paddingBottom: "10px", borderBottom: "2px dashed var(--color-border)" }}>Add a Friend</h2>
           <form onSubmit={handleAddFriend} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <div style={{ position: "relative" }}>
-              <Search size={18} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#999" }} />
-              <input 
-                type="email" 
-                placeholder="Friend's email" 
-                value={searchEmail}
-                onChange={(e) => setSearchEmail(e.target.value)}
-                style={{ width: "100%", padding: "10px 10px 10px 35px", borderRadius: "8px", border: "1px solid var(--color-border)", outline: "none", fontFamily: "var(--font-inter)" }}
-              />
+              <Search size={16} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#999" }} />
+              <input type="email" placeholder="Friend's email" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} style={{ width: "100%", padding: "10px 10px 10px 34px", borderRadius: "8px", border: "1px solid var(--color-border)", outline: "none", backgroundColor: "var(--color-bg)", color: "var(--color-text)" }} />
             </div>
             <button type="submit" className="btn-primary" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px" }}>
-              <UserPlus size={18} /> Send Request
+              <UserPlus size={16} /> Send Request
             </button>
           </form>
-          {message && <p style={{ marginTop: "10px", fontSize: "0.9rem", color: "var(--color-maroon)", textAlign: "center" }}>{message}</p>}
+          {message && <p style={{ marginTop: "10px", fontSize: "0.85rem", color: "var(--color-maroon)", textAlign: "center" }}>{message}</p>}
         </div>
 
-        {/* Pending Requests */}
+        {/* Pending */}
         <div className="cute-card">
-          <h2 className="caveat" style={{ fontSize: "2rem", marginTop: 0, borderBottom: "2px dashed var(--color-border)", paddingBottom: "10px" }}>Pending Requests</h2>
+          <h2 className="caveat" style={{ fontSize: "1.8rem", marginTop: 0, paddingBottom: "10px", borderBottom: "2px dashed var(--color-border)" }}>Pending Requests</h2>
           {pendingRequests.length === 0 ? (
-            <p style={{ color: "#888", fontStyle: "italic", textAlign: "center", padding: "20px 0" }}>No pending requests.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              {pendingRequests.map((req) => (
-                <div key={req.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px", backgroundColor: "var(--color-bg)", borderRadius: "8px" }}>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: "bold" }}>{req.user1.name}</p>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#666" }}>{req.user1.email}</p>
-                  </div>
-                  <button onClick={() => handleAccept(req.user1.id)} className="btn-primary" style={{ padding: "6px 12px", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Check size={16} /> Accept
-                  </button>
-                </div>
-              ))}
+            <p style={{ color: "#888", textAlign: "center", padding: "20px 0", fontStyle: "italic" }}>No pending requests</p>
+          ) : pendingRequests.map(req => (
+            <div key={req.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px", backgroundColor: "var(--color-bg)", borderRadius: "8px", marginBottom: "8px" }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: "bold", fontSize: "0.9rem" }}>{req.user1.name}</p>
+                <p style={{ margin: 0, fontSize: "0.75rem", color: "#888" }}>{req.user1.email}</p>
+              </div>
+              <button onClick={() => handleAccept(req.user1.id)} className="btn-primary" style={{ padding: "6px 12px", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "4px" }}>
+                <Check size={14} /> Accept
+              </button>
             </div>
-          )}
+          ))}
         </div>
 
         {/* Friends List */}
         <div className="cute-card" style={{ gridColumn: "1 / -1" }}>
-          <h2 className="caveat" style={{ fontSize: "2rem", marginTop: 0, borderBottom: "2px dashed var(--color-border)", paddingBottom: "10px" }}>Your Friends</h2>
+          <h2 className="caveat" style={{ fontSize: "1.8rem", marginTop: 0, paddingBottom: "10px", borderBottom: "2px dashed var(--color-border)" }}>Your Friends ({friends.length})</h2>
           {friends.length === 0 ? (
-            <p style={{ color: "#888", fontStyle: "italic", textAlign: "center", padding: "40px 0" }}>You haven't added any friends yet. Invite them to join WatchKnot!</p>
+            <p style={{ color: "#888", textAlign: "center", padding: "40px 0", fontStyle: "italic" }}>No friends yet — invite someone!</p>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "15px" }}>
-              {friends.map((friend) => (
-                <div key={friend.id} style={{ padding: "15px", backgroundColor: "var(--color-bg)", borderRadius: "8px", border: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: "15px" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "var(--color-accent)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-                    <User size={20} />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px" }}>
+              {friends.map(friend => (
+                <div key={friend.id} style={{ padding: "12px", backgroundColor: "var(--color-bg)", borderRadius: "8px", border: "1px solid var(--color-border)", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "50%", backgroundColor: "var(--color-maroon)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+                    <User size={18} />
                   </div>
                   <div>
-                    <p style={{ margin: 0, fontWeight: "bold" }}>{friend.name}</p>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: "#666" }}>{friend.email}</p>
+                    <p style={{ margin: 0, fontWeight: "bold", fontSize: "0.85rem" }}>{friend.name}</p>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "#888" }}>{friend.email?.split("@")[0]}</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

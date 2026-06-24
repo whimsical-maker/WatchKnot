@@ -1,14 +1,17 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Film, Home, User, LogOut, Moon, Sun, Menu, X, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { user } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -32,11 +35,25 @@ export default function Navbar() {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push("/login");
+  };
+
   const navLinks = [
     { href: "/", label: "Home", icon: <Home size={18} /> },
     { href: "/movies", label: "Movies", icon: <Film size={18} /> },
     { href: "/profile", label: "Profile", icon: <User size={18} /> },
   ];
+
+  const linkStyle = (href: string) => ({
+    display: "flex", alignItems: "center", gap: "6px",
+    padding: "8px 14px", borderRadius: "8px",
+    fontWeight: pathname === href ? "bold" : "normal" as any,
+    color: pathname === href ? "var(--color-maroon)" : "var(--color-text)",
+    backgroundColor: pathname === href ? "rgba(128,0,0,0.08)" : "transparent",
+    transition: "all 0.2s", fontSize: "0.95rem", textDecoration: "none",
+  });
 
   return (
     <nav style={{
@@ -47,34 +64,26 @@ export default function Navbar() {
       boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
     }}>
       <div style={{ maxWidth: "1100px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: "64px" }}>
-        
-        {/* Logo */}
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
           <Film size={28} color="var(--color-maroon)" />
           <span className="caveat" style={{ fontSize: "1.8rem", color: "var(--color-maroon)" }}>WatchKnot</span>
         </Link>
 
         {/* Desktop Nav */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }} className="desktop-nav">
-          {session && navLinks.map(link => (
-            <Link key={link.href} href={link.href} style={{
-              display: "flex", alignItems: "center", gap: "6px",
-              padding: "8px 14px", borderRadius: "8px",
-              fontWeight: pathname === link.href ? "bold" : "normal",
-              color: pathname === link.href ? "var(--color-maroon)" : "var(--color-text)",
-              backgroundColor: pathname === link.href ? "rgba(128,0,0,0.08)" : "transparent",
-              transition: "all 0.2s", fontSize: "0.95rem"
-            }}>
+          {user && navLinks.map(link => (
+            <Link key={link.href} href={link.href} style={linkStyle(link.href)}>
               {link.icon} {link.label}
             </Link>
           ))}
 
-          {session && (
+          {user && (
             <Link href="/movies/add" style={{
               display: "flex", alignItems: "center", gap: "6px",
               padding: "8px 16px", borderRadius: "8px",
               backgroundColor: "var(--color-maroon)", color: "white",
-              fontWeight: "bold", fontSize: "0.9rem", transition: "opacity 0.2s"
+              fontWeight: "bold", fontSize: "0.9rem", textDecoration: "none"
             }}>
               <Plus size={16} /> Add Movie
             </Link>
@@ -88,8 +97,8 @@ export default function Navbar() {
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
-          {session ? (
-            <button onClick={() => signOut({ callbackUrl: "/login" })} style={{
+          {user ? (
+            <button onClick={handleSignOut} style={{
               display: "flex", alignItems: "center", gap: "6px",
               background: "none", border: "1px solid var(--color-border)",
               borderRadius: "8px", padding: "8px 14px", cursor: "pointer",
@@ -101,14 +110,14 @@ export default function Navbar() {
             <Link href="/login" style={{
               padding: "8px 20px", borderRadius: "8px",
               backgroundColor: "var(--color-maroon)", color: "white",
-              fontWeight: "bold", fontSize: "0.9rem"
+              fontWeight: "bold", fontSize: "0.9rem", textDecoration: "none"
             }}>
               Sign In
             </Link>
           )}
         </div>
 
-        {/* Mobile menu button */}
+        {/* Mobile */}
         <button onClick={() => setMenuOpen(!menuOpen)} style={{
           display: "none", background: "none", border: "none",
           cursor: "pointer", color: "var(--color-text)"
@@ -117,40 +126,15 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {menuOpen && (
-        <div style={{
-          borderTop: "1px dashed var(--color-border)",
-          padding: "16px", display: "flex", flexDirection: "column", gap: "8px"
-        }}>
-          {session && navLinks.map(link => (
-            <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "10px 14px", borderRadius: "8px",
-              color: "var(--color-text)", fontSize: "1rem"
-            }}>
+        <div style={{ borderTop: "1px dashed var(--color-border)", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          {user && navLinks.map(link => (
+            <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)} style={{ ...linkStyle(link.href), display: "flex" }}>
               {link.icon} {link.label}
             </Link>
           ))}
-          {session && (
-            <Link href="/movies/add" onClick={() => setMenuOpen(false)} style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "10px 14px", borderRadius: "8px",
-              backgroundColor: "var(--color-maroon)", color: "white", fontWeight: "bold"
-            }}>
-              <Plus size={16} /> Add Movie
-            </Link>
-          )}
-          {session && (
-            <button onClick={() => signOut({ callbackUrl: "/login" })} style={{
-              display: "flex", alignItems: "center", gap: "8px",
-              padding: "10px 14px", borderRadius: "8px",
-              background: "none", border: "1px solid var(--color-border)",
-              cursor: "pointer", color: "var(--color-text)", width: "100%"
-            }}>
-              <LogOut size={16} /> Sign Out
-            </button>
-          )}
+          {user && <Link href="/movies/add" onClick={() => setMenuOpen(false)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "8px", backgroundColor: "var(--color-maroon)", color: "white", fontWeight: "bold", textDecoration: "none" }}><Plus size={16} /> Add Movie</Link>}
+          {user && <button onClick={handleSignOut} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "8px", background: "none", border: "1px solid var(--color-border)", cursor: "pointer", color: "var(--color-text)", width: "100%" }}><LogOut size={16} /> Sign Out</button>}
         </div>
       )}
 
