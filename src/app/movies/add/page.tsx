@@ -34,6 +34,12 @@ export default function AddMoviePage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ url: scrapeUrl }),
       });
+      
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server timeout or unexpected response. You can manually type the movie details below.");
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to scrape");
 
