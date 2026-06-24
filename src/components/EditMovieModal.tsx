@@ -133,7 +133,7 @@ export default function EditMovieModal({ movie }: { movie: any }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                     <div>
                       <label style={{ display: "block", marginBottom: "6px", fontWeight: "bold", fontSize: "0.9rem" }}>Video Link (Embed URL)</label>
-                      <input type="url" value={formData.videoUrl} onChange={e => setFormData({ ...formData, videoUrl: e.target.value })} style={inputStyle} placeholder="https://..." />
+                      <input type="text" value={formData.videoUrl} onChange={e => setFormData({ ...formData, videoUrl: e.target.value })} style={inputStyle} placeholder="https://..." />
                       <p style={{ fontSize: "0.75rem", color: "#888", marginTop: "4px" }}>Link to a free source (YouTube, Tubi, Cinefreak, etc).</p>
                     </div>
                     <div>

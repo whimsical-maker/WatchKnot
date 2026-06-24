@@ -304,7 +304,7 @@ export default function Movies() {
                   <Input placeholder="Rating (e.g. 8.5)" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
                   <Input placeholder="Poster image URL" value={form.posterUrl} onChange={(e) => setForm({ ...form, posterUrl: e.target.value })} />
                 </div>
-                <Input placeholder="Watch / Embed URL (optional)" value={form.embedUrl} onChange={(e) => setForm({ ...form, embedUrl: e.target.value })} />
+                <Input type="text" placeholder="Watch / Embed URL (optional)" value={form.embedUrl} onChange={(e) => setForm({ ...form, embedUrl: e.target.value })} />
                 <Textarea placeholder="Short description..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
                 <Button variant="default" onClick={handleAdd} disabled={!form.title} className="w-full bg-warm text-white hover:bg-warm/90">
                   <Film className="w-4 h-4 mr-1" />

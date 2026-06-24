@@ -6,6 +6,8 @@ import EditMovieModal from "@/components/EditMovieModal";
 import DownloadButton from "@/components/DownloadButton";
 import { Suspense } from "react";
 
+export const dynamic = "force-dynamic";
+
 export default async function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
