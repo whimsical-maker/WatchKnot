@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // NextAuth schema
@@ -43,7 +44,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  
+
   // App specific
   movies        Movie[]
   tickets       Ticket[]
@@ -85,7 +86,7 @@ model Ticket {
   seatRow      String?
   seatNumber   Int?
   createdAt    DateTime @default(now())
-  
+
   movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -94,9 +95,9 @@ model Friendship {
   id        String   @id @default(cuid())
   user1Id   String
   user2Id   String
-  status    String   @default("PENDING") // PENDING, ACCEPTED
+  status    String   @default("PENDING")
   createdAt DateTime @default(now())
-  
+
   user1     User     @relation("UserFriendshipsInitiated", fields: [user1Id], references: [id], onDelete: Cascade)
   user2     User     @relation("UserFriendshipsReceived", fields: [user2Id], references: [id], onDelete: Cascade)
 
@@ -107,9 +108,9 @@ model Post {
   id        String   @id @default(cuid())
   userId    String
   content   String
-  privacy   String   @default("FRIENDS") // PUBLIC, FRIENDS, PRIVATE
+  privacy   String   @default("FRIENDS")
   createdAt DateTime @default(now())
-  
+
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments  Comment[]
 }
@@ -120,7 +121,7 @@ model Comment {
   userId    String
   content   String
   createdAt DateTime @default(now())
-  
+
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

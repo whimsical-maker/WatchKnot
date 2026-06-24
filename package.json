@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
+    "@prisma/client": "^5.22.0",
     "@uploadthing/react": "^7.3.3",
     "bcrypt": "^6.0.0",
     "framer-motion": "^12.41.0",
@@ -21,14 +22,13 @@
     "uploadthing": "^7.7.4"
   },
   "devDependencies": {
-    "@prisma/client": "^7.8.0",
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "prisma": "^7.8.0",
+    "prisma": "^5.22.0",
     "typescript": "^5"
   }
 }
