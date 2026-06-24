@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { PageSkeleton } from "@/components/PageSkeleton";
+import { ProfileSkeleton } from "@/components/PageSkeleton";
 
 export default function Profile() {
   const { user, loading: authLoading, getToken } = useAuth();
@@ -99,7 +99,7 @@ export default function Profile() {
   if (loading || authLoading) {
     return (
       <div className="min-h-screen py-8 sm:py-12 px-4">
-        <PageSkeleton />
+        <ProfileSkeleton />
       </div>
     );
   }
