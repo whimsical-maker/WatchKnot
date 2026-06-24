@@ -55,6 +55,8 @@ export default function Navbar() {
     transition: "all 0.2s", fontSize: "0.95rem", textDecoration: "none",
   });
 
+  if (!user) return null;
+
   return (
     <nav style={{
       position: "sticky", top: 0, zIndex: 100,
